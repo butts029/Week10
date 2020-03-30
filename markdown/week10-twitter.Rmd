@@ -1,0 +1,80 @@
+---
+title: "Week 10 Project: Twitter"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "../output") })
+---
+
+# Libraries
+
+```{r, message = FALSE}
+library(tidyverse)
+library(twitteR)
+```
+The tidyverse package is used for the data import and cleaning. The twitteR package is used to pull and process the tweets.
+
+# Data Import and Cleaning
+
+```{r}
+# Authentication
+apikey <- "apikeygoeshere"
+apisecret <- "apisecretgoeshere"
+token <- "tokengoeshere"
+secrettoken <- "secrettokengoeshere"
+
+setup_twitter_oauth(apikey, apisecret, token, secrettoken)
+
+# Pull the tweets from twitter
+tweets_raw <- searchTwitteR("#rstats", n = 1000)
+# remove retweets and select variables of interest
+tweets_tbl <- strip_retweets(tweets_raw) %>%
+                twListToDF() %>%
+                select(screenName, text, favoriteCount, retweetCount) %>%
+                as_tibble()
+```
+
+The data cleaning process included removing all retweets, converting the tweets into a data frame, selecting the four variables of interest (screen name, text of the tweet, the number of favorites, and the number of retweets), and finally converting the data frame to a tibble.
+
+\newpage
+
+# Analysis
+
+```{r}
+# Is there a correlation between length of tweet and number of retweets?
+length_retweet <- cor.test(str_length(tweets_tbl$text), tweets_tbl$retweetCount)
+length_retweet
+
+# Is there a correlation between length of tweet and number of favorites?
+length_favorite <- cor.test(str_length(tweets_tbl$text), tweets_tbl$favoriteCount)
+length_favorite
+```
+
+The correlation between length of tweet and the number of retweets was was `r round(length_retweet$estimate, 3)` (p=`r round(length_retweet$p.value, 3)`), which is `r if(length_retweet$p.value > 0.05) paste0("not")` statistically significant.
+
+The correlation between length of tweet and the number of favorites was was `r round(length_favorite$estimate, 3)` (p=`r round(length_favorite$p.value, 3)`), which is `r if(length_favorite$p.value > 0.05) paste0("not")` statistically significant.
+
+\newpage
+
+# Visualization
+
+```{r}
+# plot of length of tweet and number of retweets
+ggplot(tweets_tbl, aes(x = str_length(tweets_tbl$text), y = tweets_tbl$retweetCount)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Length of Tweet", y = "Number of Retweets")
+```
+
+The plot shows the relationship between the length of the tweet and the number of retweets. Each point represents an individual tweet, and the line is the OLS regression line with a 95% confidence band. 
+
+\newpage
+
+```{r}
+# plot of length of tweet and number of favorites
+ggplot(tweets_tbl, aes(x = str_length(tweets_tbl$text), y = tweets_tbl$favoriteCount)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Length of Tweet", y = "Number of Favorites")
+```
+
+The plot shows the relationship between the length of the tweet and the number of favorites. Each point represents an individual tweet, and the line is the OLS regression line with a 95% confidence band. 
